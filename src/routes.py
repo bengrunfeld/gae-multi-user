@@ -8,6 +8,7 @@ import webapp2
 from webapp2_extras import routes
 
 from config import config
+from handlers import Login
 from handlers import GetAllTodos
 from handlers import GetTodo
 from handlers import CreateTodo
@@ -16,10 +17,10 @@ from handlers import DeleteTodo
 
 
 app = webapp2.WSGIApplication([
-    routes.PathPrefixRoute('/todos/api/v0.1.0', [
+    routes.PathPrefixRoute('/todos', [
         # List all todos
         webapp2.Route('/',
-                      handler=GetAllTodos,
+                      handler=Login,
                       name='get-all-todos',
                       methods=['GET']),
         # List one todo

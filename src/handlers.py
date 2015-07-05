@@ -48,6 +48,32 @@ def serialize_data(qry):
     return data 
 
 
+class Login(webapp2.RequestHandler):
+    """
+    Check that the user is logged in, then render the front end of the app
+    """
+
+    def get(self):
+
+        print '---------------'
+        print 'here'
+        print '---------------'
+
+        # Check that user is logged in. Send to auth if False
+        # if not self.session.get('logged_in'):
+        #     self.redirect('/auth')
+        #     return
+
+        # Get data for render
+        # data = _get_front_page_data()
+
+        # Put data into context
+        # context = {"repos": data, "username": get_user_name()}
+
+        # Render the app
+        # self.render('index', context)
+
+
 class GetAllTodos(webapp2.RequestHandler):
     def get(self):
         """GET /: Retrieve all todos"""
@@ -65,7 +91,7 @@ class GetAllTodos(webapp2.RequestHandler):
 
 class GetTodo(webapp2.RequestHandler):
     def get(self, todo_id):
-        """GET /<todo_id>: Retrieve a single todo"""
+            """GET /<todo_id>: Retrieve a single todo"""
 
         try:
             qry = ndb.Key('TodoModel', int(todo_id))
