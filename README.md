@@ -1,6 +1,6 @@
-# GAE RESTful API 
+# GAE Multi-User App 
 
-A GAE CRUD app that allows multiple users to log in and access their own data
+A GAE app that allows multiple users to log in and access their own data
 
 ## Disclaimer
 
