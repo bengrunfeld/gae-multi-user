@@ -4,7 +4,6 @@ The handlers below are triggered by routes.py
 They execute commands that retrieve, store, update and delete resources.
 """
 
-import json
 import webapp2
 import datetime
 import jinja2
@@ -52,7 +51,7 @@ def build_new_dict(data):
             record[key] = result[key].isoformat()
             continue
         record[key] = result[key]
-    
+
     # Add the key so that we have a reference to the record
     record['key'] = data.key.id()
 
@@ -61,18 +60,18 @@ def build_new_dict(data):
 
 def serialize_data(qry):
     """serialize ndb return data so that we can convert it to JSON"""
-    
+
     # check if qry is a list (multiple records) or not (single record)
     data = []
-    
-    if type(qry) != list: 
-        record = build_new_dict(qry) 
+
+    if type(qry) != list:
+        record = build_new_dict(qry)
         return record
 
     for q in qry:
         data.append(build_new_dict(q))
 
-    return data 
+    return data
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -99,7 +98,7 @@ class BaseHandler(webapp2.RequestHandler):
 
 class GoToLoginPage(webapp2.RequestHandler):
     """
-    1. Load the login page 
+    1. Load the login page
     """
 
     def get(self):
@@ -109,13 +108,13 @@ class GoToLoginPage(webapp2.RequestHandler):
 
 class SignIn(BaseHandler):
     """
-    2. Log the User in using Google Accounts 
+    2. Log the User in using Google Accounts
     """
 
     def get(self):
         if self.session.get('logged_in'):
             # User is logged in, proceed to account
-            self.redirect('/account') 
+            self.redirect('/account')
             return
 
         # Checks for active Google account session
@@ -137,7 +136,6 @@ class LoadAccount(BaseHandler):
 
     def get(self):
         # Check if User is logged in. If not, send to auth
-
         if not self.session.get('logged_in'):
             self.redirect('/sign-in')
             return
@@ -148,15 +146,14 @@ class LoadAccount(BaseHandler):
         # Check if User has their own data object specifically for them
         # if they don't, create it for them
         userHasOwnData = UserTodo.get_by_id(user.user_id())
-        
-        if userHasOwnData == None:
+
+        if userHasOwnData is None:
             # Make new account for User
             new_user = UserTodo(
-                   key = ndb.Key('UserTodo', user.user_id()),
-                   name = user.nickname(),
-            ) 
-            logKey = new_user.put()
-        
+                key=ndb.Key('UserTodo', user.user_id()),
+                name=user.nickname(),
+            )
+            new_user.put()
 
         # Grab data from the data store
         qry = UserTodo.get_by_id(user.user_id())
@@ -186,7 +183,7 @@ class CreateTodo(BaseHandler):
         user = users.get_current_user()
 
         target = UserTodo.get_by_id(user.user_id())
-        target.todo.append(TodoModel(title = self.request.get('title')))
+        target.todo.append(TodoModel(title=self.request.get('title')))
         target.put()
 
         self.redirect('/account')
@@ -194,19 +191,19 @@ class CreateTodo(BaseHandler):
 
 class Logout(BaseHandler):
     """
-    4. Logout from app and reset user login session 
+    4. Logout from app and reset user login session
     """
 
     def get(self):
         self.session['logged_in'] = False
         self.redirect(users.create_logout_url('/'))
         return
- 
+
 
 app = webapp2.WSGIApplication([
-   ('/sign-in', SignIn),
-   ('/account', LoadAccount),
-   ('/logout', Logout),
-   ('/post', CreateTodo),
-   ('/', GoToLoginPage),
+    ('/sign-in', SignIn),
+    ('/account', LoadAccount),
+    ('/logout', Logout),
+    ('/post', CreateTodo),
+    ('/', GoToLoginPage),
 ], config=config)
