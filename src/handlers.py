@@ -27,10 +27,17 @@ config['webapp2_extras.sessions'] = {
     'secret_key': 'that-looks-uncomfortably-large',
 }
 
+
 class TodoModel(ndb.Model):
-    "Models an individual todo title"
+    "Models a todo title"
     title = ndb.StringProperty()
     time_stored = ndb.DateTimeProperty(auto_now_add=True)
+
+
+class UserTodo(ndb.Model):
+    "Models a todo for an individual User"
+    name= ndb.StringProperty()
+    todo = ndb.StructuredProperty(TodoModel, repeated=True)
 
 
 def build_new_dict(data):
@@ -138,11 +145,15 @@ class LoadAccount(BaseHandler):
         # Checks for active Google account session
         user = users.get_current_user()
 
-        # Grab data from the data store
-        qry = TodoModel.query().fetch()
-        todos = serialize_data(qry)
+        # Check if User has their own data object specifically for them
+        # If they don't, create it
+        qry = UserTodo.query(UserTodo.name == user.user_id()).fetch()
 
-        print json.dumps(todos, sort_keys=True, indent=4)
+        # Grab data from the data store
+        qry = UserTodo.query().fetch()
+        print user.user_id()
+        print qry
+        todos = serialize_data(qry)
 
         template_data = {
             'username': user.nickname(),
@@ -157,12 +168,20 @@ class CreateTodo(BaseHandler):
     """POST /: Create a single todo"""
 
     def post(self):
+
+        # Checks for active Google account session
+        user = users.get_current_user()
+
         try:
-            new_todo = TodoModel(title = self.request.get('title')) 
+            new_todo = UserTodo(
+                       name = user.user_id(),
+                       #todo = [TodoModel(title = self.request.get('title'))]
+                       ) 
             key = new_todo.put()
-            self.redirect('/account')
         except:
             raise Exception("Error: could not complete request")
+
+        self.redirect('/account')
 
 
 class Logout(BaseHandler):
