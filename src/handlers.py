@@ -36,7 +36,7 @@ class TodoModel(ndb.Model):
 
 class UserTodo(ndb.Model):
     "Models a todo for an individual User"
-    name= ndb.StringProperty()
+    name = ndb.StringProperty()
     todo = ndb.StructuredProperty(TodoModel, repeated=True)
 
 
@@ -146,18 +146,31 @@ class LoadAccount(BaseHandler):
         user = users.get_current_user()
 
         # Check if User has their own data object specifically for them
-        # If they don't, create it
-        qry = UserTodo.query(UserTodo.name == user.user_id()).fetch()
+        # if they don't, create it for them
+        userHasOwnData = UserTodo.get_by_id(user.user_id())
+        
+        if userHasOwnData == None:
+            # Make new account for User
+            new_user = UserTodo(
+                   key = ndb.Key('UserTodo', user.user_id()),
+                   name = user.nickname(),
+            ) 
+            logKey = new_user.put()
+        
 
         # Grab data from the data store
-        qry = UserTodo.query().fetch()
-        print user.user_id()
-        print qry
+        qry = UserTodo.get_by_id(user.user_id())
         todos = serialize_data(qry)
+
+        # put titles into a list so that Jinja can use it
+        results = []
+
+        for todo in todos['todo']:
+            results.append(todo['title'])
 
         template_data = {
             'username': user.nickname(),
-            'todos': todos,
+            'todos': results,
         }
 
         template = JINJA_ENVIRONMENT.get_template('account.html')
@@ -172,14 +185,9 @@ class CreateTodo(BaseHandler):
         # Checks for active Google account session
         user = users.get_current_user()
 
-        try:
-            new_todo = UserTodo(
-                       name = user.user_id(),
-                       #todo = [TodoModel(title = self.request.get('title'))]
-                       ) 
-            key = new_todo.put()
-        except:
-            raise Exception("Error: could not complete request")
+        target = UserTodo.get_by_id(user.user_id())
+        target.todo.append(TodoModel(title = self.request.get('title')))
+        target.put()
 
         self.redirect('/account')
 
