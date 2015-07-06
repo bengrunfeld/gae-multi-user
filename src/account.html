@@ -6,5 +6,12 @@
         <h1>GAE Multi-User Sign in</h1>
         <p>Welcome to your Account, {{username}}</p>
         <a href="/logout">Logout</a>
+        <form action="/post" method="post">
+            <input type="text" name="title" value="">
+            <input type="submit" value="submit">
+        </form>
+        {% for todo in todos %} 
+            <p>{{todo}}</p>
+        {% endfor %}
     </body>
 </html>

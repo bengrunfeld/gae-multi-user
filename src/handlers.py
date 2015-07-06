@@ -33,6 +33,41 @@ class TodoModel(ndb.Model):
     time_stored = ndb.DateTimeProperty(auto_now_add=True)
 
 
+def build_new_dict(data):
+    """Build a new dict so that the data can be JSON serializable"""
+
+    result = data.to_dict()
+    record = {}
+
+    # Populate the new dict with JSON serializiable values
+    for key in result.iterkeys():
+        if isinstance(result[key], datetime.datetime):
+            record[key] = result[key].isoformat()
+            continue
+        record[key] = result[key]
+    
+    # Add the key so that we have a reference to the record
+    record['key'] = data.key.id()
+
+    return record
+
+
+def serialize_data(qry):
+    """serialize ndb return data so that we can convert it to JSON"""
+    
+    # check if qry is a list (multiple records) or not (single record)
+    data = []
+    
+    if type(qry) != list: 
+        record = build_new_dict(qry) 
+        return record
+
+    for q in qry:
+        data.append(build_new_dict(q))
+
+    return data 
+
+
 class BaseHandler(webapp2.RequestHandler):
     """
     Set up sessions and perform template renders
@@ -103,14 +138,31 @@ class LoadAccount(BaseHandler):
         # Checks for active Google account session
         user = users.get_current_user()
 
-        print user.user_id()
+        # Grab data from the data store
+        qry = TodoModel.query().fetch()
+        todos = serialize_data(qry)
+
+        print json.dumps(todos, sort_keys=True, indent=4)
 
         template_data = {
             'username': user.nickname(),
+            'todos': todos,
         }
 
         template = JINJA_ENVIRONMENT.get_template('account.html')
         self.response.write(template.render(template_data))
+
+
+class CreateTodo(BaseHandler):
+    """POST /: Create a single todo"""
+
+    def post(self):
+        try:
+            new_todo = TodoModel(title = self.request.get('title')) 
+            key = new_todo.put()
+            self.redirect('/account')
+        except:
+            raise Exception("Error: could not complete request")
 
 
 class Logout(BaseHandler):
@@ -122,39 +174,12 @@ class Logout(BaseHandler):
         self.session['logged_in'] = False
         self.redirect(users.create_logout_url('/'))
         return
-        
-
-class GetAllTodos(webapp2.RequestHandler):
-    """GET /: Retrieve all todos"""
-
-    def get(self):
-        try:
-            qry = TodoModel.query().fetch()
-            all_todos = serialize_data(qry)
-
-            self.response.headers['Content-Type'] = 'text/plain'
-            self.response.write(json.dumps(all_todos, sort_keys=True, indent=4))
-        except:
-            # TODO: Improve this error 
-            raise Exception("Error: could not complete request")            
-
-
-class CreateTodo(webapp2.RequestHandler):
-    """POST /: Create a single todo"""
-
-    def post(self):
-        try:
-            new_todo = TodoModel(title = self.request.get('title')) 
-            key = new_todo.put()
-
-            self.response.headers['Content-Type'] = 'text/plain'
-            self.response.write('Successfully added new todo')
-        except:
-            raise Exception("Error: could not complete request")
+ 
 
 app = webapp2.WSGIApplication([
    ('/sign-in', SignIn),
    ('/account', LoadAccount),
    ('/logout', Logout),
+   ('/post', CreateTodo),
    ('/', GoToLoginPage),
 ], config=config)
